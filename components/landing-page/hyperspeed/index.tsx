@@ -1311,7 +1311,6 @@ export const Hyperspeed = forwardRef<HTMLDivElement, HyperspeedProps>(({
   ...props
 }, ref) => {
   const domProps = { ...props };
-  delete domProps.effectOptions;
 
   const mergedOptions: HyperspeedOptions = {
     ...defaultOptions,
