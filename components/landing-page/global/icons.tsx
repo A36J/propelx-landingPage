@@ -1,8 +1,11 @@
-import { LucideProps, PenOff } from "lucide-react";
+import { LucideProps } from 'lucide-react'; // Make sure you import this
+import React from 'react'; // Not strictly needed for JSX but good for types
 
 type IconType = {
-    [key: string]: (props: LucideProps) => JSX.Element;
+  [key: string]: (props: LucideProps) => React.ReactElement;
+
 };
+
 
 const Icons: IconType = {
     icon: (props: LucideProps) => (
