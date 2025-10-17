@@ -102,16 +102,22 @@ export async function GET(req: Request) {
     // 4. PERSISTENCE: Save the permanent token
     await prisma.connection.upsert({
       where: {
-        accountId_platform_shopDomain_platformIdentifier: {
+        // CRITICAL FIX: Use the only generated unique key name.
+        // This requires platformIdentifier to be present, so we use the shop domain
+        // or a default unique value for it in the where clause.
+        accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'SHOPIFY',
-          shopDomain: shop,
-          platformIdentifier: null,
+          // Since platformIdentifier is required by this unique key, 
+          // and shop domain is what identifies Shopify, we use the shop domain here.
+          platformIdentifier: shop, 
         },
       },
       update: {
         accessToken: access_token, // MUST BE ENCRYPTED IN PRODUCTION
         scope: scope,
+        shopDomain: shop, // Keep data updated
+        platformIdentifier: shop, // Keep data updated
       },
       create: {
         accountId: accountId,
@@ -119,6 +125,7 @@ export async function GET(req: Request) {
         shopDomain: shop,
         accessToken: access_token, // MUST BE ENCRYPTED IN PRODUCTION
         scope: scope,
+        platformIdentifier: shop, // Use the shop domain as the main identifier
       },
     });
 
