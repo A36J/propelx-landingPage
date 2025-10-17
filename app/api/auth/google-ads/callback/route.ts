@@ -67,6 +67,7 @@ export async function GET(req: Request) {
         accountId_platform_shopDomain_platformIdentifier: {
           accountId: accountId,
           platform: 'GOOGLE_ADS',
+          shopDomain: null,
           // We won't know the Customer ID until a later step (MCID selection)
           platformIdentifier: refresh_token, // TEMPORARY: Use RT as unique identifier for now
         },

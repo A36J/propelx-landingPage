@@ -66,6 +66,7 @@ export async function GET(req: Request) {
         accountId_platform_shopDomain_platformIdentifier: {
           accountId: accountId,
           platform: 'GA4',
+          shopDomain: null,
           // GA4 requires selecting a Property ID. We'll prompt the user for this 
           // in a later step and update this record. For now, use the RT as the identifier.
           platformIdentifier: refresh_token, 
