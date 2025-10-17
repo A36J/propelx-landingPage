@@ -1,5 +1,3 @@
-
-
 import Image from "next/image"; 
 import Reason from "@/components/landing-page/reason";
 import Capabilities from "@/components/landing-page/features-04";
