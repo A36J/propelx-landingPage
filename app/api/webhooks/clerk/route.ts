@@ -12,7 +12,7 @@ const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
 export async function POST(req: Request) {
   // 1. Get the headers
-  const headerPayload = await headers();
+  const headerPayload = await headers(); // Use direct import
   const svixId = headerPayload.get('svix-id');
   const svixTimestamp = headerPayload.get('svix-timestamp');
   const svixSignature = headerPayload.get('svix-signature');
@@ -53,20 +53,28 @@ export async function POST(req: Request) {
     const clerkId = id; // The Clerk User ID
     const primaryEmail = evt.data.email_addresses?.[0]?.email_address;
     
-    if (!clerkId) {
-        return new Response('Error: Missing Clerk ID in payload', { status: 400 });
+    if (!clerkId || !primaryEmail) {
+        return new Response('Error: Missing required data in payload', { status: 400 });
     }
 
     try {
-      // Create the corresponding Account record in your database
+      // 1. Create the base User record (to satisfy the 1:1 relationship)
+      const user = await prisma.user.create({
+        data: {
+          email: primaryEmail,
+        },
+      });
+
+      // 2. Create the Account record, linking it via the new User's ID
       await prisma.account.create({
         data: {
           clerkId: clerkId,
           email: primaryEmail,
-          // You can add other default fields here
+          userId: user.id, // CRITICAL: Link the Account to the new User
         },
       });
-      console.log(`Account created in DB for Clerk ID: ${clerkId}`);
+      
+      console.log(`User and Account created in DB for Clerk ID: ${clerkId}`);
       return new Response('Account Created', { status: 201 });
     } catch (e) {
       console.error('Database Error creating account:', e);
@@ -74,16 +82,21 @@ export async function POST(req: Request) {
     }
   }
 
-  // Optionally handle other events like 'user.deleted'
+  // Handle user deletion for cleanup
   if (eventType === 'user.deleted') {
-    // Note: Clerk sometimes sends a null ID for a deleted user, use the previous ID
     const clerkId = evt.data.id; 
     
     if(clerkId) {
-        await prisma.account.delete({
-            where: { clerkId: clerkId },
-        });
-        console.log(`Account deleted from DB for Clerk ID: ${clerkId}`);
+        // Find the linked Account and delete it (and the cascading User record, if configured)
+        const account = await prisma.account.findUnique({ where: { clerkId } });
+        if (account) {
+          // Delete the User record, which cascades (or manually delete Account and then User)
+          // Assuming you have ON DELETE CASCADE or handle both:
+          await prisma.account.delete({ where: { id: account.id }});
+          await prisma.user.delete({ where: { id: account.userId }});
+        }
+
+        console.log(`Account and User deleted for Clerk ID: ${clerkId}`);
     }
   }
 
