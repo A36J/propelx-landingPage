@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
@@ -14,7 +11,76 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -----------------------------------------------------------
+// 1. ORIGINAL USER MODEL (KEPT AS IS)
+// -----------------------------------------------------------
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
+  id      Int      @id @default(autoincrement())
+  email   String   @unique
+  
+  // Link to the Account model
+  account Account?
+
+  @@map("users")
+}
+
+
+// -----------------------------------------------------------
+// 2. NEW ACCOUNT MODEL (BRIDGE TO CLERK)
+// -----------------------------------------------------------
+model Account {
+  id        Int      @id @default(autoincrement())
+  
+  // The unique ID provided by Clerk (user_2erN...)
+  clerkId   String   @unique 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign key linking back to the internal User model
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Relationship to the Connection model
+  connections Connection[]
+
+  @@map("accounts")
+}
+
+
+// -----------------------------------------------------------
+// ENUM: Defines the set of supported platforms
+// -----------------------------------------------------------
+enum PlatformType {
+  SHOPIFY
+  META_ADS
+  GOOGLE_ADS
+  GA4 // Google Analytics 4
+}
+
+
+// -----------------------------------------------------------
+// 3. CONNECTION MODEL (Stores External Platform Tokens)
+// -----------------------------------------------------------
+model Connection {
+  id                 String         @id @default(uuid())
+  platform           PlatformType
+  
+  // Generic OAuth Fields
+  accessToken        String         // The permanent OAuth access token (MUST BE ENCRYPTED IN PRODUCTION)
+  scope              String?
+  
+  // Platform-Specific Identifier Fields
+  shopDomain         String?        // For Shopify (e.g., myshop.myshopify.com)
+  platformIdentifier String?        // e.g., Ad Account ID, GA4 Property ID
+  platformData       Json?          // Flexible field for other unique data
+  
+  lastUpdated        DateTime       @updatedAt
+  
+  // Foreign key linking back to the Account model (which is linked to the Clerk ID)
+  accountId          Int
+  account            Account        @relation(fields: [accountId], references: [id])
+  
+  // Ensures a user can only have one connection of a specific type
+  @@unique([accountId, platform, shopDomain, platformIdentifier]) 
+  @@map("connections")
 }

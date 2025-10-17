@@ -66,7 +66,7 @@ const HomePage = () => {
           {/* Image on the right, extending off screen */}
           <div className="flex-1 relative p-10">
             <Container delay={0.3}>
-              <div className="relative mx-auto max-w-7xl rounded-xl lg:rounded-[32px] border border-neutral-200/50 p-2 backdrop-blur-lg border-neutral-700 bg-white md:p-4 mt-12 ">
+              <div className="relative mx-auto max-w-7xl rounded-xl lg:rounded-[32px] border p-2 backdrop-blur-lg border-neutral-700 bg-white md:p-4 mt-12 ">
                 <div className="absolute top-1/4 left-1/2 -z-10 gradient w-3/4 -translate-x-1/2 h-1/4 -translate-y-1/2 inset-0 blur-[10rem]"></div>
                 <div className="rounded-lg lg:rounded-[24px] border p-2 border-neutral-700 bg-neutral-600">
                   <Image
