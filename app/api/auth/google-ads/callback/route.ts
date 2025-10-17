@@ -58,7 +58,7 @@ export async function GET(req: Request) {
     }
 
     // CRITICAL: We need the refresh_token (long-term key) and the access_token (short-term)
-    const { access_token, refresh_token, scope } = data; 
+    const { refresh_token, scope } = data; 
     
     // 3. PERSISTENCE: Save the Refresh Token
     // We store the Refresh Token in the accessToken field (ENCRYPTED!)
@@ -67,15 +67,18 @@ export async function GET(req: Request) {
         accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'GOOGLE_ADS',
-          shopDomain: null,
-          // We won't know the Customer ID until a later step (MCID selection)
-          platformIdentifier: refresh_token, // TEMPORARY: Use RT as unique identifier for now
+          // CRITICAL FIX: REMOVE shopDomain from the 'where' clause object.
+          // shopDomain: null, // <--- DELETE THIS LINE
+          
+          // Use RT as unique identifier for now
+          platformIdentifier: refresh_token, 
         },
       },
       update: {
         accessToken: refresh_token, // Store the Refresh Token (MUST BE ENCRYPTED)
         scope: scope,
-        // The actual Google Customer ID (MCID) is typically configured after this step.
+        // REQUIRED: Set the optional field to NULL when updating non-Shopify data
+        shopDomain: null, 
       },
       create: {
         accountId: accountId,
@@ -83,6 +86,8 @@ export async function GET(req: Request) {
         accessToken: refresh_token, // Store the Refresh Token (MUST BE ENCRYPTED)
         scope: scope,
         platformIdentifier: refresh_token,
+        // REQUIRED: Set the optional field to NULL when creating non-Shopify data
+        shopDomain: null,
       },
     });
 

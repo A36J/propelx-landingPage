@@ -2,7 +2,8 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { PrismaClient } from '@/lib/generated/prisma';
+// Assuming your Prisma import is correct
+import { PrismaClient } from '@/lib/generated/prisma'; 
 const prisma = new PrismaClient();
 
 // --- Configuration Constants ---
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
   // 1. NONCE VERIFICATION
   const [accountIdStr, receivedNonce] = statePayload.split(':');
   const accountId = parseInt(accountIdStr, 10);
-  const cookieStore = await cookies();
+  const cookieStore = await cookies(); // Use direct import cookies()
   const expectedNonce = cookieStore.get('ga4_auth_nonce')?.value;
 
   if (!expectedNonce || receivedNonce !== expectedNonce) {
@@ -60,28 +61,30 @@ export async function GET(req: Request) {
     const { refresh_token, scope } = data; 
     
     // 3. PERSISTENCE: Save the Refresh Token
-    // Similar to Google Ads, the Refresh Token is the permanent key.
+    // We use the unique key: @@unique([accountId, platform, platformIdentifier])
     await prisma.connection.upsert({
       where: {
         accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'GA4',
-          shopDomain: null,
-          // GA4 requires selecting a Property ID. We'll prompt the user for this 
-          // in a later step and update this record. For now, use the RT as the identifier.
+          // CRITICAL FIX: The type does NOT include shopDomain here.
           platformIdentifier: refresh_token, 
         },
       },
       update: {
-        accessToken: refresh_token, // Store the Refresh Token (MUST BE ENCRYPTED)
+        accessToken: refresh_token,
         scope: scope,
+        // REQUIRED: Set the optional field to NULL when updating non-Shopify data
+        shopDomain: null, 
       },
       create: {
         accountId: accountId,
         platform: 'GA4',
-        accessToken: refresh_token, // Store the Refresh Token (MUST BE ENCRYPTED)
+        accessToken: refresh_token,
         scope: scope,
         platformIdentifier: refresh_token,
+        // REQUIRED: Set the optional field to NULL when creating non-Shopify data
+        shopDomain: null, 
       },
     });
 

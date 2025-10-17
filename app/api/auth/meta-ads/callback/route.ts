@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   // 2. NONCE VERIFICATION
   const [accountIdStr, receivedNonce] = statePayload.split(':');
   const accountId = parseInt(accountIdStr, 10);
-  const cookieStore =await cookies();
+  const cookieStore = await cookies();
   const expectedNonce = cookieStore.get('meta_auth_nonce')?.value;
 
   if (!expectedNonce || receivedNonce !== expectedNonce) {
@@ -71,9 +71,8 @@ export async function GET(req: Request) {
     const { access_token: longLivedToken, scope: grantedScope } = data;
 
     // 5. GET USER ID and AD ACCOUNTS (MANDATORY STEP for Meta Ads)
-    // The access token is for the user. We need their Ad Account ID.
     const profileUrl = `https://graph.facebook.com/v19.0/me?` +
-      `fields=id,name,adaccounts{id,name}&` + // Request user ID and associated Ad Accounts
+      `fields=id,name,adaccounts{id,name}&` +
       `access_token=${longLivedToken}`;
     
     response = await fetch(profileUrl);
@@ -86,32 +85,31 @@ export async function GET(req: Request) {
 
     const { id: metaUserId, name: metaUserName, adaccounts } = data;
     
-    // 6. PERSISTENCE: Save the Long-Lived Token and connection details
-    // NOTE: Meta typically has multiple ad accounts. You might need an intermediate
-    // UI step here to let the user select which ad account PropelX should manage.
-    
     // For simplicity, we save the first available Ad Account ID with the token.
     const firstAdAccountId = adaccounts?.data?.[0]?.id;
     
     if (!firstAdAccountId) {
         console.warn('User has no accessible ad accounts.');
-        // Still save the token, but redirect with a warning.
     }
 
+    // 6. PERSISTENCE: Save the Long-Lived Token and connection details
     await prisma.connection.upsert({
       where: {
         accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'META_ADS',
-          // Meta doesn't use shopDomain, so it remains null
-          shopDomain: null, 
-          // Store the Ad Account ID as the main identifier
+          // CRITICAL FIX: REMOVE shopDomain from the 'where' clause object.
+          // shopDomain: null, // <--- DELETE THIS LINE
+          
+          // Store the Ad Account ID or User ID as the main identifier
           platformIdentifier: firstAdAccountId || metaUserId, 
         },
       },
       update: {
         accessToken: longLivedToken, // ENCRYPT THIS FIELD
         scope: grantedScope,
+        // REQUIRED: Set the optional field to NULL when updating non-Shopify data
+        shopDomain: null, 
         platformData: adaccounts ? { adaccounts: adaccounts.data } : null,
       },
       create: {
@@ -120,6 +118,8 @@ export async function GET(req: Request) {
         accessToken: longLivedToken, // ENCRYPT THIS FIELD
         scope: grantedScope,
         platformIdentifier: firstAdAccountId || metaUserId,
+        // REQUIRED: Set the optional field to NULL when creating non-Shopify data
+        shopDomain: null, 
         platformData: adaccounts ? { adaccounts: adaccounts.data } : null,
       },
     });
