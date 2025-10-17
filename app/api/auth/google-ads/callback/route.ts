@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   // 1. NONCE VERIFICATION
   const [accountIdStr, receivedNonce] = statePayload.split(':');
   const accountId = parseInt(accountIdStr, 10);
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const expectedNonce = cookieStore.get('google_ads_nonce')?.value;
 
   if (!expectedNonce || receivedNonce !== expectedNonce) {

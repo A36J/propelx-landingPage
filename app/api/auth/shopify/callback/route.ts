@@ -66,7 +66,7 @@ export async function GET(req: Request) {
   // B. Nonce Verification: CSRF protection
   const [accountIdStr, receivedNonce] = statePayload.split(':');
   const accountId = parseInt(accountIdStr, 10);
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const expectedNonce = cookieStore.get('shopify_auth_nonce')?.value; 
 
   if (!expectedNonce || receivedNonce !== expectedNonce) {
