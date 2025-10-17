@@ -3,7 +3,8 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
+  // Keep your custom output path
+  output   = "../lib/generated/prisma" 
 }
 
 datasource db {
@@ -33,6 +34,8 @@ model Account {
   
   // The unique ID provided by Clerk (user_2erN...)
   clerkId   String   @unique 
+  // Add email from the Clerk webhook to make debugging easier
+  email     String? 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -62,7 +65,8 @@ enum PlatformType {
 // 3. CONNECTION MODEL (Stores External Platform Tokens)
 // -----------------------------------------------------------
 model Connection {
-  id                 String         @id @default(uuid())
+  // Switched to Int ID for better indexing performance, though UUID is fine too.
+  id                 Int            @id @default(autoincrement()) 
   platform           PlatformType
   
   // Generic OAuth Fields
@@ -70,8 +74,8 @@ model Connection {
   scope              String?
   
   // Platform-Specific Identifier Fields
-  shopDomain         String?        // For Shopify (e.g., myshop.myshopify.com)
-  platformIdentifier String?        // e.g., Ad Account ID, GA4 Property ID
+  shopDomain         String?        // <-- CRITICAL: Made optional for non-Shopify
+  platformIdentifier String         // <-- CRITICAL: Made NON-optional (or required) for non-Shopify to rely on.
   platformData       Json?          // Flexible field for other unique data
   
   lastUpdated        DateTime       @updatedAt
@@ -80,7 +84,13 @@ model Connection {
   accountId          Int
   account            Account        @relation(fields: [accountId], references: [id])
   
-  // Ensures a user can only have one connection of a specific type
-  @@unique([accountId, platform, shopDomain, platformIdentifier]) 
+  // === MODIFIED UNIQUE CONSTRAINTS ===
+  // 1. For Shopify: Unique on Account, Platform, and Shop Domain. platformIdentifier is redundant here.
+  @@unique([accountId, platform, shopDomain]) 
+  
+  // 2. For Ads/GA4: Unique on Account, Platform, and Platform Identifier (e.g., Ad Account ID/Refresh Token).
+  // Note: Since shopDomain is often null here, this constraint manages the non-Shopify links.
+  @@unique([accountId, platform, platformIdentifier])
+
   @@map("connections")
 }
