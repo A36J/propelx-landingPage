@@ -100,7 +100,7 @@ export async function GET(req: Request) {
 
     await prisma.connection.upsert({
       where: {
-        accountId_platform_shopDomain_platformIdentifier: {
+        accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'META_ADS',
           // Meta doesn't use shopDomain, so it remains null

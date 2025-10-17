@@ -63,7 +63,7 @@ export async function GET(req: Request) {
     // Similar to Google Ads, the Refresh Token is the permanent key.
     await prisma.connection.upsert({
       where: {
-        accountId_platform_shopDomain_platformIdentifier: {
+        accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'GA4',
           shopDomain: null,

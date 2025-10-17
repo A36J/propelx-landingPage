@@ -64,7 +64,7 @@ export async function GET(req: Request) {
     // We store the Refresh Token in the accessToken field (ENCRYPTED!)
     await prisma.connection.upsert({
       where: {
-        accountId_platform_shopDomain_platformIdentifier: {
+        accountId_platform_platformIdentifier: {
           accountId: accountId,
           platform: 'GOOGLE_ADS',
           shopDomain: null,
